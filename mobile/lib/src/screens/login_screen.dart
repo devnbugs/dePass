@@ -49,9 +49,33 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              const Text('GatePassX', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F4EF),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFF1B1B18).withOpacity(0.12)),
+                    ),
+                    child: Image.asset('assets/icon/app-icon.png'),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'GatePassX',
+                      style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
-              const Text('Secure event scanning on your mobile device.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              const Text(
+                'Secure event scanning on your mobile device.',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
               const SizedBox(height: 40),
               TextField(
                 controller: _usernameController,

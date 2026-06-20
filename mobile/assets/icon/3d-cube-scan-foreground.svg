@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">GatePassX 3D Cube Scan Foreground</title>
+  <desc id="desc">A rounded scan frame surrounding an isometric cube with a transparent background.</desc>
+  <path d="M142 96H108a52 52 0 0 0-52 52v34" fill="none" stroke="#1B1B18" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M406 96h34a52 52 0 0 1 52 52v34" fill="none" stroke="#1B1B18" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M96 370v34a52 52 0 0 0 52 52h34" fill="none" stroke="#1B1B18" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M416 370v34a52 52 0 0 1-52 52h-34" fill="none" stroke="#1B1B18" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M185 198 256 158 327 198 256 238Z" fill="#FA3E2C" stroke="#1B1B18" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M185 198 256 238V344L185 304Z" fill="#1B1B18" stroke="#1B1B18" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M327 198 256 238V344L327 304Z" fill="#4B4A45" stroke="#1B1B18" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M214 268 256 290 298 268" fill="none" stroke="#F8F4EF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+</svg>

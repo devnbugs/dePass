@@ -111,6 +111,14 @@ function Section({ title, subtitle, actions, children }) {
     );
 }
 
+function BrandMark() {
+    return (
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#e8e5df] bg-[#f8f4ef] shadow-sm shadow-[#00000008] dark:border-[#31302b] dark:bg-[#171713]">
+            <img src="/brand/3d-cube-scan.svg" alt="GatePassX" className="h-9 w-9" />
+        </div>
+    );
+}
+
 function ToggleChip({ label, enabled, onToggle }) {
     return (
         <button
@@ -440,6 +448,7 @@ export default function App() {
                 <div className="mx-auto flex min-h-screen max-w-7xl items-center px-6 py-10 lg:px-10">
                     <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                         <div className="rounded-[2rem] border border-[#e6e2d8] bg-white p-8 shadow-sm shadow-[#00000005] dark:border-[#2f2d27] dark:bg-[#121212]">
+                            <BrandMark />
                             <p className="text-sm uppercase tracking-[0.28em] text-[#9d988b] dark:text-[#b8b5ad]">Admin dashboard</p>
                             <h1 className="mt-3 text-4xl font-semibold text-[#1b1b18] dark:text-[#f8f4ef]">GatePassX operations console</h1>
                             <p className="mt-4 max-w-2xl text-sm leading-7 text-[#6f6b61] dark:text-[#b2afa7]">
@@ -492,6 +501,9 @@ export default function App() {
             <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div>
+                        <div className="mb-4">
+                            <BrandMark />
+                        </div>
                         <p className="text-sm uppercase tracking-[0.28em] text-[#9d988b] dark:text-[#b8b5ad]">Admin dashboard</p>
                         <h1 className="mt-3 text-4xl font-semibold text-[#1b1b18] dark:text-[#f8f4ef]">GatePassX operations</h1>
                         <p className="mt-4 max-w-2xl text-sm leading-7 text-[#6f6b61] dark:text-[#b2afa7]">

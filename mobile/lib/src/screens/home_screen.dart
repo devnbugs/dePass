@@ -37,7 +37,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GatePassX Dashboard'),
+        title: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F4EF),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Image.asset('assets/icon/app-icon.png'),
+            ),
+            const SizedBox(width: 10),
+            const Text('GatePassX Dashboard'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

@@ -5,6 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
+        <link rel="icon" type="image/svg+xml" href="{{ asset('brand/3d-cube-scan.svg') }}">
+        <link rel="icon" type="image/png" href="{{ asset('brand/3d-cube-scan.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('brand/3d-cube-scan.png') }}">
 
         @fonts
 
