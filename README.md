@@ -2,7 +2,7 @@
 
 Secure event pass management with a Laravel API, Flutter mobile client, QR pass generation, device approval, and CI-backed Android release builds.
 
-## Current Stack
+## Current Stacks
 
 - Backend: Laravel 13, Sanctum token auth, SQLite for local/CI, MySQL-ready production config
 - Mobile: Flutter app for login, events, passes, and mobile scanner workflows
