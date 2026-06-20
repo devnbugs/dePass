@@ -1,15 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\PassController;
 use App\Http\Controllers\Api\PassTemplateController;
-use App\Http\Controllers\Api\DeviceController;
-use App\Http\Controllers\Api\SystemConfigurationController;
 use App\Http\Controllers\Api\PassTypeController;
+use App\Http\Controllers\Api\SystemConfigurationController;
+use App\Http\Controllers\Api\UserController;
+use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/devices/{device}/revoke', [DeviceController::class, 'revoke']);
 
     // System configuration
+    Route::get('/admin/dashboard', [SystemConfigurationController::class, 'dashboard']);
     Route::apiResource('configurations', SystemConfigurationController::class);
 
     // Events

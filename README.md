@@ -8,6 +8,7 @@ Secure event pass management with a Laravel API, Flutter mobile client, QR pass 
 - Mobile: Flutter app for login, events, passes, and mobile scanner workflows
 - Automation: seeded Laravel API tests, live HTTP smoke flow, Flutter analysis/tests, split-per-ABI APK builds
 - Security model: role-based access for `super_admin`, `organizer`, and `gateman`; signed QR payloads; approved device packages
+- Admin controls: super-admin dashboard API for feature flags, service controls, release toggles, and system configuration
 
 ## Quick Start
 
@@ -34,6 +35,14 @@ Default seeded users:
 
 The admin seed can be overridden with `DEPASS_ADMIN_USERNAME`, `DEPASS_ADMIN_EMAIL`, `DEPASS_ADMIN_PASSWORD`, and `DEPASS_DEFAULT_PASSWORD`.
 
+### Local Preflight
+
+```bash
+./scripts/local-preflight.sh
+```
+
+The preflight creates an ignored root `workspace/` directory, runs Composer validation, runs Laravel tests against an isolated SQLite database, then runs Flutter dependency, analysis, and test checks when Flutter is installed locally.
+
 ### Mobile
 
 ```bash
@@ -56,6 +65,7 @@ Split APK outputs are created under `mobile/build/app/outputs/flutter-apk/`.
 - VIP, Guest, Staff, and Speaker pass types
 - Demo VIP passes with valid HMAC signatures
 - One approved gate device, a sample scan, a default badge template, and mobile configuration
+- Admin feature and service controls under `features.*` and `services.*`
 
 Factories now exist for users, organizations, events, pass types, passes, devices, scans, pass templates, audit logs, and system configurations. Tests and new seeders can use the same factory layer instead of hand-building records.
 
@@ -81,6 +91,7 @@ Useful endpoints:
 - `POST /api/events/{event}/passes/bulk-generate`
 - `GET /api/events/{event}/package`
 - `POST /api/devices/{device}/approve`
+- `GET /api/admin/dashboard`
 - `GET /api/stats`
 
 ## GitHub Workflows
@@ -95,7 +106,7 @@ Workflow release assets include ABI-specific APKs and a Laravel shared-hosting z
 ```text
 backend/                 Laravel API, migrations, factories, seeders, tests
 mobile/                  Flutter mobile app
-admin/                   Admin panel placeholder
+scripts/                 Local preflight and automation helpers
 .github/workflows/       CI, smoke, and Android release automation
 ```
 
@@ -104,4 +115,5 @@ admin/                   Admin panel placeholder
 ```bash
 cd backend && composer validate --strict && php artisan test
 cd ../mobile && flutter analyze && flutter test
+./scripts/local-preflight.sh
 ```

@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Device;
+use App\Models\Event;
+use App\Models\Pass;
+use App\Models\PassTemplate;
 use App\Models\SystemConfiguration;
 use Illuminate\Http\Request;
 
@@ -25,13 +29,13 @@ class SystemConfigurationController extends Controller
 
         $validated = $request->validate([
             'key' => ['required', 'string', 'unique:system_configurations,key'],
-            'value' => ['nullable', 'json'],
+            'value' => ['nullable'],
             'description' => ['nullable', 'string'],
         ]);
 
         $config = SystemConfiguration::create([
             'key' => $validated['key'],
-            'value' => json_decode($validated['value'] ?? 'null', true),
+            'value' => $this->normalizeValue($validated['value'] ?? null),
             'description' => $validated['description'] ?? null,
             'created_by' => $request->user()->id,
         ]);
@@ -58,12 +62,12 @@ class SystemConfigurationController extends Controller
         }
 
         $validated = $request->validate([
-            'value' => ['sometimes', 'json'],
+            'value' => ['sometimes'],
             'description' => ['sometimes', 'string'],
         ]);
 
         $configuration->update([
-            'value' => array_key_exists('value', $validated) ? json_decode($validated['value'], true) : $configuration->value,
+            'value' => array_key_exists('value', $validated) ? $this->normalizeValue($validated['value']) : $configuration->value,
             'description' => $validated['description'] ?? $configuration->description,
         ]);
 
@@ -84,5 +88,50 @@ class SystemConfigurationController extends Controller
         return response()->json([
             'message' => 'Configuration removed successfully',
         ]);
+    }
+
+    public function dashboard(Request $request)
+    {
+        if ($request->user()->role !== 'super_admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $configurations = SystemConfiguration::query()
+            ->orderBy('key')
+            ->get(['id', 'key', 'value', 'description', 'updated_at']);
+
+        return response()->json([
+            'stats' => [
+                'events' => Event::count(),
+                'passes' => Pass::count(),
+                'approved_devices' => Device::where('status', 'approved')->count(),
+                'pending_devices' => Device::where('status', 'pending')->count(),
+                'templates' => PassTemplate::count(),
+            ],
+            'features' => $this->configurationGroup($configurations, 'features.'),
+            'services' => $this->configurationGroup($configurations, 'services.'),
+            'configurations' => $configurations,
+        ]);
+    }
+
+    private function normalizeValue(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+
+            return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+        }
+
+        return $value;
+    }
+
+    private function configurationGroup($configurations, string $prefix): array
+    {
+        return $configurations
+            ->filter(fn (SystemConfiguration $configuration) => str_starts_with($configuration->key, $prefix))
+            ->mapWithKeys(fn (SystemConfiguration $configuration) => [
+                substr($configuration->key, strlen($prefix)) => $configuration->value,
+            ])
+            ->all();
     }
 }

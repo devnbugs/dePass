@@ -114,12 +114,30 @@ class DatabaseSeeder extends Seeder
             'created_by' => $organizer->id,
         ]);
 
-        SystemConfiguration::factory()->create([
-            'key' => 'mobile.seeded_package_cache',
-            'value' => ['ttl_minutes' => 15],
-            'description' => 'Default cache window for seeded mobile event package demos.',
-            'created_by' => $superAdmin->id,
-        ]);
+        SystemConfiguration::factory()->sequence(
+            [
+                'key' => 'features.mobile_app',
+                'value' => [
+                    'login' => true,
+                    'event_list' => true,
+                    'pass_sync' => true,
+                    'offline_package' => true,
+                ],
+                'description' => 'Admin dashboard controls for mobile app feature availability.',
+                'created_by' => $superAdmin->id,
+            ],
+            [
+                'key' => 'services.release_pipeline',
+                'value' => [
+                    'laravel_preflight' => true,
+                    'flutter_analyze' => true,
+                    'flutter_tests' => true,
+                    'split_per_abi_apk' => true,
+                ],
+                'description' => 'Admin dashboard controls for release workflow services.',
+                'created_by' => $superAdmin->id,
+            ],
+        )->count(2)->create();
 
         $this->command?->info('Database seeded with default users, event data, factories, and mobile configuration.');
     }

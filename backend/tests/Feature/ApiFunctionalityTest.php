@@ -138,7 +138,7 @@ class ApiFunctionalityTest extends TestCase
         $create = $this->withToken($adminToken)
             ->postJson('/api/configurations', [
                 'key' => 'mobile.offline_scan_limit',
-                'value' => json_encode(['limit' => 500]),
+                'value' => ['limit' => 500],
                 'description' => 'Maximum offline scans before sync warning.',
             ]);
 
@@ -155,7 +155,7 @@ class ApiFunctionalityTest extends TestCase
 
         $this->withToken($adminToken)
             ->patchJson("/api/configurations/{$configurationId}", [
-                'value' => json_encode(['limit' => 750]),
+                'value' => ['limit' => 750],
             ])
             ->assertOk()
             ->assertJsonPath('configuration.value.limit', 750);
@@ -192,6 +192,18 @@ class ApiFunctionalityTest extends TestCase
             ->getJson('/api/stats')
             ->assertOk()
             ->assertJsonStructure(['events', 'passes', 'devices', 'pending_devices', 'templates']);
+
+        $this->withToken($token)
+            ->getJson('/api/admin/dashboard')
+            ->assertOk()
+            ->assertJsonPath('features.mobile_app.login', true)
+            ->assertJsonPath('services.release_pipeline.split_per_abi_apk', true)
+            ->assertJsonStructure([
+                'stats' => ['events', 'passes', 'approved_devices', 'pending_devices', 'templates'],
+                'features',
+                'services',
+                'configurations',
+            ]);
     }
 
     public function test_organizer_can_manage_pass_types_templates_and_print_manifest(): void
