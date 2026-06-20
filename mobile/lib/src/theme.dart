@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static ThemeData lightTheme() {
@@ -18,24 +17,39 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: base.textTheme.titleLarge?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
       ),
-      textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
-        bodyLarge: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF1B1B18)),
-        bodyMedium: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF4B4A45)),
-        titleLarge: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
-        labelLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+      textTheme: base.textTheme.copyWith(
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(
+          fontSize: 16,
+          color: const Color(0xFF1B1B18),
+        ),
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          color: const Color(0xFF4B4A45),
+        ),
+        titleLarge: base.textTheme.titleLarge?.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+        labelLarge: base.textTheme.labelLarge?.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFA3E2C),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+          textStyle: base.textTheme.labelLarge?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -49,7 +63,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        labelStyle: GoogleFonts.inter(color: const Color(0xFF4B4A45)),
+        labelStyle: base.textTheme.bodyMedium?.copyWith(
+          color: const Color(0xFF4B4A45),
+        ),
       ),
       cardTheme: CardThemeData(
         color: Colors.white,

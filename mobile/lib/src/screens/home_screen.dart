@@ -87,6 +87,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       margin: const EdgeInsets.only(bottom: 16),
                       child: ListTile(
                         leading: const Icon(Icons.qr_code, color: Color(0xFF1B1B18)),
+                        title: const Text('GatePass Scanner'),
+                        subtitle: Text('${session.passes.length} passes ready for instant validation'),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/scanner');
+                        },
+                      ),
+                    ),
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: ListTile(
+                        leading: const Icon(Icons.receipt_long, color: Color(0xFFFA3E2C)),
                         title: const Text('Passes'),
                         subtitle: Text('${session.passes.length} pass records synced'),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 18),

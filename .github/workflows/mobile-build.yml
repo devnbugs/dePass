@@ -124,6 +124,69 @@ jobs:
           set -o pipefail
           flutter create --platforms=android --project-name depass_mobile --org com.gatepassx . 2>&1 | tee ../flutter-create.log
 
+      - name: Pin Android release SDK levels
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          sdk_levels = {
+              "flutter.compileSdkVersion": "34",
+              "flutter.targetSdkVersion": "34",
+              "flutter.minSdkVersion": "21",
+          }
+
+          def rewrite_key_value_file(path: Path) -> None:
+              if not path.exists():
+                  return
+              lines = path.read_text().splitlines()
+              rewritten = []
+              seen = set()
+
+              for line in lines:
+                  stripped = line.lstrip()
+                  if "=" in line and not stripped.startswith("#"):
+                      key, value = line.split("=", 1)
+                      key = key.strip()
+                      if key in sdk_levels:
+                          rewritten.append(f"{key}={sdk_levels[key]}")
+                          seen.add(key)
+                          continue
+                  rewritten.append(line)
+
+              for key, value in sdk_levels.items():
+                  if key not in seen:
+                      rewritten.append(f"{key}={value}")
+
+              path.write_text("\n".join(rewritten) + "\n")
+
+          rewrite_key_value_file(Path("android/local.properties"))
+          rewrite_key_value_file(Path("android/gradle.properties"))
+
+          for path in Path("android").rglob("build.gradle*"):
+              text = path.read_text()
+              updated = (
+                  text.replace("flutter.compileSdkVersion", "34")
+                  .replace("flutter.targetSdkVersion", "34")
+                  .replace("flutter.minSdkVersion", "21")
+              )
+              if updated != text:
+                  path.write_text(updated)
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          if manifest.exists():
+              text = manifest.read_text()
+              permission = '<uses-permission android:name="android.permission.CAMERA" />'
+              if permission not in text:
+                  insert_after = '</manifest>'
+                  text = text.replace(
+                      insert_after,
+                      f'    {permission}\n{insert_after}',
+                  )
+                  manifest.write_text(text)
+          PY
+
       - name: Install Flutter dependencies
         run: |
           set -o pipefail

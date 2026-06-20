@@ -101,6 +101,21 @@ Useful endpoints:
 
 Workflow release assets include ABI-specific APKs and a Laravel shared-hosting zip with root `index.php` and `.htaccess` support.
 
+## Mobile Release Requirements
+
+The Android release workflow now makes its release assumptions explicit so CI does not depend on template defaults:
+
+- Flutter stable on Java 17
+- Android SDK Platform 34 or later
+- Generated Android app config pinned to `compileSdkVersion 34`, `targetSdkVersion 34`, and `minSdkVersion 21`
+- `flutter_secure_storage` kept on the supported Android toolchain path
+- Release artifacts collected from `mobile/build/app/outputs/` and the shared-hosting Laravel zip in `release/`
+
+## Admin And Scanner Updates
+
+- `/admin` now opens a token-backed operations console with editable feature flags, release service toggles, and a full configuration manager.
+- The mobile app now includes a dedicated GatePass QR scanner with instant `valid`, `invalid`, and `already scanned` feedback plus a manual payload verifier.
+
 ## Project Layout
 
 ```text

@@ -5,6 +5,7 @@ import 'src/screens/login_screen.dart';
 import 'src/screens/home_screen.dart';
 import 'src/screens/event_detail_screen.dart';
 import 'src/screens/passes_screen.dart';
+import 'src/screens/scanner_screen.dart';
 import 'src/theme.dart';
 
 class GatePassXApp extends StatelessWidget {
@@ -22,6 +23,7 @@ class GatePassXApp extends StatelessWidget {
           '/': (context) => const LoginScreen(),
           '/home': (context) => const HomeScreen(),
           '/event': (context) => const EventDetailScreen(),
+          '/scanner': (context) => const ScannerScreen(),
           '/passes': (context) => const PassesScreen(),
         },
       ),
