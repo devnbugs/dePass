@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Event;
+use App\Models\Device;
 use App\Models\PassType;
 use App\Models\SystemConfiguration;
 use App\Models\User;
@@ -50,6 +51,51 @@ class ApiFunctionalityTest extends TestCase
             ->postJson('/api/logout')
             ->assertOk()
             ->assertJsonPath('message', 'Logout successful');
+    }
+
+    public function test_mobile_login_requires_admin_approved_device(): void
+    {
+        $deviceUuid = (string) Str::uuid();
+
+        $this->postJson('/api/device-registration', [
+            'uuid' => $deviceUuid,
+            'username' => 'gateman1',
+            'device_fingerprint' => 'pre-login-test-device',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('device.status', 'pending');
+
+        $this->postJson('/api/login', [
+            'username' => 'gateman1',
+            'password' => 'password123',
+            'device_uuid' => $deviceUuid,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['device_uuid']);
+
+        $adminToken = $this->loginToken('admin');
+        $device = Device::where('uuid', $deviceUuid)->firstOrFail();
+
+        $this->withToken($adminToken)
+            ->postJson("/api/devices/{$device->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('device.status', 'approved');
+
+        $this->postJson('/api/device-registration/status', [
+            'uuid' => $deviceUuid,
+            'username' => 'gateman1',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'approved');
+
+        $this->postJson('/api/login', [
+            'username' => 'gateman1',
+            'password' => 'password123',
+            'device_uuid' => $deviceUuid,
+        ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Login successful')
+            ->assertJsonStructure(['token']);
     }
 
     public function test_organizer_can_load_events_generate_passes_and_fetch_package(): void
@@ -203,6 +249,7 @@ class ApiFunctionalityTest extends TestCase
                 'features',
                 'services',
                 'configurations',
+                'devices',
             ]);
     }
 
@@ -283,9 +330,22 @@ class ApiFunctionalityTest extends TestCase
 
     private function loginToken(string $username): string
     {
-        return $this->postJson('/api/login', [
+        $payload = [
             'username' => $username,
             'password' => 'password123',
-        ])->assertOk()->json('token');
+        ];
+
+        if ($username !== 'admin') {
+            $user = User::where('username', $username)->firstOrFail();
+            $admin = User::where('username', 'admin')->firstOrFail();
+            $device = Device::factory()->approved($admin)->create([
+                'user_id' => $user->id,
+                'device_fingerprint' => "test-{$username}",
+            ]);
+
+            $payload['device_uuid'] = $device->uuid;
+        }
+
+        return $this->postJson('/api/login', $payload)->assertOk()->json('token');
     }
 }

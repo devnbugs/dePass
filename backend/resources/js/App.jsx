@@ -182,6 +182,7 @@ export default function App() {
     const [loginForm, setLoginForm] = useState({ username: 'admin', password: '' });
     const [dashboard, setDashboard] = useState(null);
     const [events, setEvents] = useState([]);
+    const [devices, setDevices] = useState([]);
     const [drafts, setDrafts] = useState({});
     const [newConfig, setNewConfig] = useState({
         key: '',
@@ -216,6 +217,7 @@ export default function App() {
 
                 setDashboard(dashboardPayload);
                 setEvents(Array.isArray(eventsPayload.data) ? eventsPayload.data : []);
+                setDevices(Array.isArray(dashboardPayload.devices) ? dashboardPayload.devices : []);
 
                 const nextDrafts = {};
                 for (const row of dashboardPayload.configurations || []) {
@@ -296,6 +298,7 @@ export default function App() {
 
             setDashboard(dashboardPayload);
             setEvents(Array.isArray(eventsPayload.data) ? eventsPayload.data : []);
+            setDevices(Array.isArray(dashboardPayload.devices) ? dashboardPayload.devices : []);
 
             const nextDrafts = {};
             for (const row of dashboardPayload.configurations || []) {
@@ -315,6 +318,7 @@ export default function App() {
         setToken('');
         setDashboard(null);
         setEvents([]);
+        setDevices([]);
         setDrafts({});
         setNotice('Signed out.');
     }
@@ -324,6 +328,28 @@ export default function App() {
             ...current,
             [rowId]: value,
         }));
+    }
+
+    async function updateDeviceStatus(device, action) {
+        setSavingKey(`device-${device.id}`);
+        setError('');
+        setNotice('');
+
+        try {
+            const response = await requestJson(`/api/devices/${device.id}/${action}`, token, {
+                method: 'POST',
+            });
+
+            setDevices((current) =>
+                current.map((item) => (item.id === device.id ? response.device : item)),
+            );
+            setNotice(`${device.user?.username || 'Device'} ${action === 'approve' ? 'approved' : 'revoked'}.`);
+            await reload();
+        } catch (caughtError) {
+            setError(caughtError.message || `Unable to ${action} device.`);
+        } finally {
+            setSavingKey('');
+        }
     }
 
     async function saveConfiguration(row) {
@@ -547,6 +573,80 @@ export default function App() {
                     <StatCard title="Approved devices" value={dashboard?.stats?.approved_devices ?? 0} subtitle="Active device bindings" />
                     <StatCard title="Pending devices" value={dashboard?.stats?.pending_devices ?? 0} subtitle="Gate scanners waiting approval" />
                     <StatCard title="Templates" value={dashboard?.stats?.templates ?? 0} subtitle="Badge and manifest templates" />
+                </div>
+
+                <div className="mt-8">
+                    <Section
+                        title="Device approvals"
+                        subtitle="Approve or revoke scanner phones before they can sign in to the mobile app."
+                    >
+                        <div className="overflow-x-auto px-6 py-6">
+                            <table className="min-w-full text-left text-sm leading-6">
+                                <thead className="bg-[#f2efe9] text-[#6f6b61] dark:bg-[#161615] dark:text-[#a9a79f]">
+                                    <tr>
+                                        <th className="px-4 py-3 font-medium uppercase tracking-[0.16em]">User</th>
+                                        <th className="px-4 py-3 font-medium uppercase tracking-[0.16em]">Device</th>
+                                        <th className="px-4 py-3 font-medium uppercase tracking-[0.16em]">Status</th>
+                                        <th className="px-4 py-3 font-medium uppercase tracking-[0.16em]">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {devices.length > 0 ? (
+                                        devices.map((device) => (
+                                            <tr key={device.id} className="border-b border-[#ece9e1] last:border-b-0 dark:border-[#2a2923]">
+                                                <td className="px-4 py-4 text-[#1b1b18] dark:text-[#f8f4ef]">
+                                                    {device.user?.username ?? 'Unassigned'}
+                                                    <span className="block text-xs text-[#8a8579]">{device.user?.role ?? '-'}</span>
+                                                </td>
+                                                <td className="max-w-[18rem] px-4 py-4 font-mono text-xs text-[#6f6b61] dark:text-[#a9a79f]">
+                                                    <span className="block truncate">{device.uuid}</span>
+                                                    <span className="block truncate">{device.device_fingerprint || 'No fingerprint'}</span>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                                        device.status === 'approved'
+                                                            ? 'bg-[#eff8ef] text-[#1e7a49] dark:bg-[#112219] dark:text-[#b9e3c5]'
+                                                            : device.status === 'revoked'
+                                                              ? 'bg-[#fff4f2] text-[#b02a1d] dark:bg-[#2b140f] dark:text-[#f5c7bf]'
+                                                              : 'bg-[#fff8e8] text-[#996a00] dark:bg-[#2b2110] dark:text-[#f4d28a]'
+                                                    }`}
+                                                    >
+                                                        {device.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateDeviceStatus(device, 'approve')}
+                                                            className="rounded-full bg-[#1b1b18] px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#f8f4ef] dark:text-[#1b1b18]"
+                                                            disabled={savingKey === `device-${device.id}` || device.status === 'approved'}
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateDeviceStatus(device, 'revoke')}
+                                                            className="rounded-full border border-[#f0c2bc] px-4 py-2 text-xs font-semibold text-[#b02a1d] transition hover:bg-[#fff4f2] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#6a2c25] dark:hover:bg-[#2b140f]"
+                                                            disabled={savingKey === `device-${device.id}` || device.status === 'revoked'}
+                                                        >
+                                                            Revoke
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td className="px-4 py-6 text-sm text-[#6f6b61] dark:text-[#a9a79f]" colSpan="4">
+                                                No devices have registered yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Section>
                 </div>
 
                 <div className="mt-8 grid gap-8 lg:grid-cols-2">

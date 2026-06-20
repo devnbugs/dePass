@@ -200,9 +200,25 @@ jobs:
 
               return json.loads(body) if body else {}
 
+          admin_login = request("POST", "/login", payload={
+              "username": "admin",
+              "password": "password123",
+          })
+          admin_token = admin_login["token"]
+
+          login_device_uuid = str(uuid.uuid4())
+          registered_device = request("POST", "/device-registration", payload={
+              "uuid": login_device_uuid,
+              "username": "organizer1",
+              "device_fingerprint": "github-actions-login-device",
+          }, expected=201)
+          login_device_id = registered_device["device"]["id"]
+          request("POST", f"/devices/{login_device_id}/approve", token=admin_token)
+
           login = request("POST", "/login", payload={
               "username": "organizer1",
               "password": "password123",
+              "device_uuid": login_device_uuid,
           })
           token = login["token"]
 

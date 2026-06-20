@@ -24,6 +24,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   DateTime? _lastHandledAt;
   String? _lastRawValue;
   bool _torchEnabled = false;
+  int _scannerRestartKey = 0;
 
   @override
   void dispose() {
@@ -107,8 +108,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
           IconButton(
             tooltip: 'Toggle torch',
             onPressed: () async {
-              await _controller.toggleTorch();
-              setState(() => _torchEnabled = !_torchEnabled);
+              try {
+                await _controller.toggleTorch();
+                if (mounted) {
+                  setState(() => _torchEnabled = !_torchEnabled);
+                }
+              } catch (_) {
+                if (!mounted) {
+                  return;
+                }
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Torch is not available on this camera.')),
+                );
+              }
             },
             icon: Icon(_torchEnabled ? Icons.flash_on : Icons.flash_off),
           ),
@@ -206,8 +219,45 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     fit: StackFit.expand,
                     children: [
                       MobileScanner(
+                        key: ValueKey(_scannerRestartKey),
                         controller: _controller,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, child) {
+                          return Container(
+                            color: const Color(0xFF1B1B18),
+                            padding: const EdgeInsets.all(24),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.no_photography, color: Colors.white, size: 42),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Camera unavailable',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    error.toString(),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.white70),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      setState(() => _scannerRestartKey++);
+                                    },
+                                    child: const Text('Retry Camera'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                         onDetect: (capture) {
                           String? rawValue;
                           for (final barcode in capture.barcodes) {

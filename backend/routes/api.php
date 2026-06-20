@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/device-registration', [DeviceController::class, 'publicRegister']);
+Route::post('/device-registration/status', [DeviceController::class, 'publicStatus']);
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {

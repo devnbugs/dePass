@@ -6,10 +6,82 @@ use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class DeviceController extends Controller
 {
+    public function publicRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'uuid' => ['required', 'uuid'],
+            'username' => ['required', 'string', 'exists:users,username'],
+            'public_key' => ['nullable', 'string'],
+            'device_fingerprint' => ['nullable', 'string'],
+        ]);
+
+        $user = User::where('username', $validated['username'])->firstOrFail();
+        $device = Device::where('uuid', $validated['uuid'])->first();
+
+        if ($device && $device->user_id && $device->user_id !== $user->id) {
+            return response()->json([
+                'message' => 'This device is already registered to another user.',
+                'device' => $device,
+            ], 409);
+        }
+
+        if (!$device) {
+            $device = Device::create([
+                'user_id' => $user->id,
+                'uuid' => $validated['uuid'],
+                'public_key' => $validated['public_key'] ?? null,
+                'device_fingerprint' => $validated['device_fingerprint'] ?? null,
+                'status' => 'pending',
+            ]);
+        } elseif ($device->status === 'pending') {
+            $device->update([
+                'user_id' => $user->id,
+                'public_key' => $validated['public_key'] ?? $device->public_key,
+                'device_fingerprint' => $validated['device_fingerprint'] ?? $device->device_fingerprint,
+            ]);
+        }
+
+        return response()->json([
+            'message' => $device->status === 'approved'
+                ? 'Device already approved'
+                : 'Device registration pending approval',
+            'device' => $device->fresh('user', 'approver'),
+        ], $device->wasRecentlyCreated ? 201 : 200);
+    }
+
+    public function publicStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'uuid' => ['required', 'uuid'],
+            'username' => ['required', 'string', 'exists:users,username'],
+        ]);
+
+        $user = User::where('username', $validated['username'])->firstOrFail();
+        $device = Device::where('uuid', $validated['uuid'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$device) {
+            return response()->json([
+                'message' => 'Device is not registered for this user.',
+                'status' => 'unregistered',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => match ($device->status) {
+                'approved' => 'Device approved',
+                'revoked' => 'Device revoked',
+                default => 'Device registration pending approval',
+            },
+            'status' => $device->status,
+            'device' => $device->load('user', 'approver'),
+        ]);
+    }
+
     public function index(Request $request)
     {
         $query = Device::with('user', 'approver');

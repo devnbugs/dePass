@@ -111,6 +111,10 @@ class SystemConfigurationController extends Controller
             'features' => $this->configurationGroup($configurations, 'features.'),
             'services' => $this->configurationGroup($configurations, 'services.'),
             'configurations' => $configurations,
+            'devices' => Device::with('user', 'approver')
+                ->latest()
+                ->limit(25)
+                ->get(),
         ]);
     }
 

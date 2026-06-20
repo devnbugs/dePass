@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Device;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +22,7 @@ class AuthController extends Controller
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
+            'device_uuid' => 'nullable|uuid',
         ]);
 
         $user = User::where('username', $request->username)->first();
@@ -29,6 +31,25 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'username' => ['The provided credentials are invalid.'],
             ]);
+        }
+
+        if ($user->role !== 'super_admin') {
+            if (!$request->filled('device_uuid')) {
+                throw ValidationException::withMessages([
+                    'device_uuid' => ['This device must be registered and approved before login.'],
+                ]);
+            }
+
+            $approvedDevice = Device::where('uuid', $request->device_uuid)
+                ->where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->first();
+
+            if (!$approvedDevice) {
+                throw ValidationException::withMessages([
+                    'device_uuid' => ['This device is not approved by an admin yet.'],
+                ]);
+            }
         }
 
         // Revoke all existing tokens

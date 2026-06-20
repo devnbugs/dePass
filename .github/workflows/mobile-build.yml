@@ -142,7 +142,7 @@ jobs:
           sdk_levels = {
               "flutter.compileSdkVersion": "36",
               "flutter.targetSdkVersion": "36",
-              "flutter.minSdkVersion": "24",
+              "flutter.minSdkVersion": "28",
           }
 
           def rewrite_key_value_file(path: Path) -> None:
@@ -177,7 +177,7 @@ jobs:
               updated = (
                   text.replace("flutter.compileSdkVersion", "36")
                   .replace("flutter.targetSdkVersion", "36")
-                  .replace("flutter.minSdkVersion", "24")
+                  .replace("flutter.minSdkVersion", "28")
               )
               if updated != text:
                   path.write_text(updated)
@@ -239,9 +239,9 @@ jobs:
           flutter build appbundle --release 2>&1 | tee ../flutter-build-aab.log
 
       - name: Prepare release assets
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_type == 'apk' || inputs.build_type == 'both' }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
 
           release_dir="../release"
           laravel_staging="${release_dir}/laravel-shared-hosting"
@@ -268,6 +268,9 @@ jobs:
             "${laravel_staging}/storage/framework/testing/"* \
             "${laravel_staging}/storage/framework/views/"*.php \
             "${laravel_staging}/storage/logs/"*.log
+
+          test -f "${laravel_staging}/public/build/manifest.json"
+          test -f "${laravel_staging}/public/build/fonts-manifest.json"
 
           cat > "${laravel_staging}/index.php" <<'PHP'
           <?php
@@ -363,6 +366,13 @@ jobs:
         with:
           name: depass-mobile-split-apks
           path: mobile/build/app/outputs/flutter-apk/app-*-release.apk
+          if-no-files-found: error
+
+      - name: Upload Laravel shared-hosting zip
+        uses: actions/upload-artifact@v6
+        with:
+          name: depass-laravel-shared-hosting
+          path: release/depass-laravel-shared-hosting-${{ github.run_number }}.zip
           if-no-files-found: error
 
       - name: Upload App Bundle
