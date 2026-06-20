@@ -9,7 +9,7 @@
         <link rel="apple-touch-icon" href="{{ asset('brand/3d-cube-scan.png') }}">
         @fonts
 
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/js/app.jsx'])
     </head>
     <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] min-h-screen">
         <div id="app" class="min-h-screen"></div>

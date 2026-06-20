@@ -26,6 +26,21 @@ run_backend() {
     cd "${ROOT_DIR}/backend"
     XDEBUG_MODE=off DB_CONNECTION=sqlite DB_DATABASE="${BACKEND_DB}" php artisan test
   )
+
+  if command -v npm >/dev/null; then
+    echo "== Laravel: Vite production build =="
+    (
+      cd "${ROOT_DIR}/backend"
+      if [ -f package-lock.json ]; then
+        npm ci
+      else
+        npm install
+      fi
+      npm run build
+    )
+  else
+    echo "Skipping Laravel Vite build: npm is not installed."
+  fi
 }
 
 run_flutter() {

@@ -18,15 +18,49 @@ class GatePassXApp extends StatelessWidget {
       child: MaterialApp(
         title: 'GatePassX',
         theme: AppTheme.lightTheme(),
-        initialRoute: '/',
         routes: {
-          '/': (context) => const LoginScreen(),
+          '/': (context) => const AuthGate(),
+          '/login': (context) => const LoginScreen(),
           '/home': (context) => const HomeScreen(),
           '/event': (context) => const EventDetailScreen(),
           '/scanner': (context) => const ScannerScreen(),
           '/passes': (context) => const PassesScreen(),
         },
       ),
+    );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late final Future<void> _startup;
+
+  @override
+  void initState() {
+    super.initState();
+    _startup = context.read<SessionProvider>().initialize();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _startup,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final session = context.watch<SessionProvider>();
+        return session.isAuthenticated ? const HomeScreen() : const LoginScreen();
+      },
     );
   }
 }

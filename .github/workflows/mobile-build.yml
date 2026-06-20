@@ -93,6 +93,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -211,6 +218,13 @@ jobs:
           else
             echo "No Flutter test directory found; skipping flutter test."
           fi
+
+      - name: Build Laravel frontend assets
+        working-directory: backend
+        run: |
+          set -o pipefail
+          npm ci
+          npm run build 2>&1 | tee ../laravel-vite-build.log
 
       - name: Build Android split APKs
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_type == 'apk' || inputs.build_type == 'both' }}

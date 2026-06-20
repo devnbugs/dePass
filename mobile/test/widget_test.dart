@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('shows the login screen', (tester) async {
     await tester.pumpWidget(const GatePassXApp());
+    await tester.pumpAndSettle();
 
     expect(find.text('GatePassX'), findsOneWidget);
     expect(find.text('Username'), findsOneWidget);

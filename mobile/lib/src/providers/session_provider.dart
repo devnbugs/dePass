@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 const _baseUrl = 'https://log.travelnetng.serv00.net/api';
 const _secureStorage = FlutterSecureStorage();
+const _requestTimeout = Duration(seconds: 15);
 
 class SessionProvider extends ChangeNotifier {
   String? _token;
@@ -33,40 +34,75 @@ class SessionProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    final storedToken = await _secureStorage.read(key: 'api_token');
-    final storedUser = await _secureStorage.read(key: 'user_name');
-    final storedRole = await _secureStorage.read(key: 'user_role');
+    String? storedToken;
+    String? storedUser;
+    String? storedRole;
+
+    try {
+      storedToken = await _secureStorage.read(key: 'api_token');
+      storedUser = await _secureStorage.read(key: 'user_name');
+      storedRole = await _secureStorage.read(key: 'user_role');
+    } catch (_) {
+      return;
+    }
 
     if (storedToken != null) {
       _token = storedToken;
       _userName = storedUser;
       _role = storedRole;
       notifyListeners();
-      await refreshData();
+
+      final refreshed = await refreshData();
+      if (!refreshed) {
+        await _clearStoredSession();
+        _token = null;
+        _userName = null;
+        _role = null;
+        notifyListeners();
+      }
     }
   }
 
   Future<bool> login({required String username, required String password}) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/login'),
-      headers: {'Accept': 'application/json'},
-      body: {
-        'username': username,
-        'password': password,
-      },
-    );
+    http.Response response;
+
+    try {
+      response = await http
+          .post(
+            Uri.parse('$_baseUrl/login'),
+            headers: {'Accept': 'application/json'},
+            body: {
+              'username': username,
+              'password': password,
+            },
+          )
+          .timeout(_requestTimeout);
+    } catch (_) {
+      return false;
+    }
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body) as Map<String, dynamic>;
+      final data = _decodeJsonMap(response.body);
+      if (data == null) {
+        return false;
+      }
+
       _token = data['token'] as String?;
       _userName = data['user']?['username'] as String? ?? username;
       _role = data['user']?['role'] as String?;
 
-      await _secureStorage.write(key: 'api_token', value: _token);
-      await _secureStorage.write(key: 'user_name', value: _userName);
-      await _secureStorage.write(key: 'user_role', value: _role);
+      if (_token == null) {
+        return false;
+      }
+
+      await _writeStoredSession();
       notifyListeners();
-      await refreshData();
+      final refreshed = await refreshData();
+      if (!refreshed) {
+        await logout();
+        return false;
+      }
+
       return true;
     }
 
@@ -86,16 +122,21 @@ class SessionProvider extends ChangeNotifier {
   Future<bool> fetchEvents() async {
     if (!isAuthenticated) return false;
 
-    final response = await http.get(
-      Uri.parse('$_baseUrl/events'),
-      headers: _authHeaders,
-    );
+    final response = await _get('$_baseUrl/events');
+    if (response == null) {
+      return false;
+    }
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body) as Map<String, dynamic>;
+      final data = _decodeJsonMap(response.body);
+      if (data == null) {
+        return false;
+      }
+
       final items = data['data'] as List<dynamic>?;
       _events = items
-              ?.map((item) => Map<String, dynamic>.from(item as Map<String, dynamic>))
+              ?.whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
               .toList() ??
           [];
       notifyListeners();
@@ -120,19 +161,23 @@ class SessionProvider extends ChangeNotifier {
         continue;
       }
 
-      final response = await http.get(
-        Uri.parse('$_baseUrl/events/$eventId/passes'),
-        headers: _authHeaders,
-      );
+      final response = await _get('$_baseUrl/events/$eventId/passes');
+      if (response == null) {
+        return false;
+      }
 
       if (response.statusCode != 200) {
         continue;
       }
 
-      final data = json.decode(response.body) as Map<String, dynamic>;
+      final data = _decodeJsonMap(response.body);
+      if (data == null) {
+        continue;
+      }
+
       final items = data['data'] as List<dynamic>?;
       if (items != null) {
-        allPasses.addAll(items.map((item) => Map<String, dynamic>.from(item as Map<String, dynamic>)));
+        allPasses.addAll(items.whereType<Map>().map((item) => Map<String, dynamic>.from(item)));
       }
     }
 
@@ -141,15 +186,50 @@ class SessionProvider extends ChangeNotifier {
     return true;
   }
 
-  void logout() {
+  Future<void> logout() async {
     _token = null;
     _userName = null;
     _role = null;
     _events = [];
     _passes = [];
-    _secureStorage.delete(key: 'api_token');
-    _secureStorage.delete(key: 'user_name');
-    _secureStorage.delete(key: 'user_role');
+    await _clearStoredSession();
     notifyListeners();
+  }
+
+  Future<http.Response?> _get(String url) async {
+    try {
+      return await http.get(Uri.parse(url), headers: _authHeaders).timeout(_requestTimeout);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Map<String, dynamic>? _decodeJsonMap(String body) {
+    try {
+      final decoded = json.decode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _writeStoredSession() async {
+    try {
+      await _secureStorage.write(key: 'api_token', value: _token);
+      await _secureStorage.write(key: 'user_name', value: _userName);
+      await _secureStorage.write(key: 'user_role', value: _role);
+    } catch (_) {
+      // A storage failure should not block an already-authenticated session.
+    }
+  }
+
+  Future<void> _clearStoredSession() async {
+    try {
+      await _secureStorage.delete(key: 'api_token');
+      await _secureStorage.delete(key: 'user_name');
+      await _secureStorage.delete(key: 'user_role');
+    } catch (_) {
+      // Ignore storage failures during cleanup.
+    }
   }
 }

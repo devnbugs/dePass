@@ -56,8 +56,12 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              session.logout();
+            onPressed: () async {
+              await session.logout();
+              if (!context.mounted) {
+                return;
+              }
+
               Navigator.pushReplacementNamed(context, '/');
             },
           )

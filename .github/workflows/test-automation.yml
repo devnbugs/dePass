@@ -27,6 +27,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -70,6 +77,12 @@ jobs:
         run: |
           set -o pipefail
           php artisan route:list --path=api 2>&1 | tee ../laravel-routes.log
+
+      - name: Build Laravel frontend assets
+        run: |
+          set -o pipefail
+          npm ci
+          npm run build 2>&1 | tee ../laravel-vite-build.log
 
       - name: Run Laravel automated tests
         env:
