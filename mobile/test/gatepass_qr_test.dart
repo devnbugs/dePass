@@ -50,6 +50,6 @@ void main() {
     );
 
     expect(outcome.state, GatePassScanState.valid);
-    expect(outcome.pass?.['attendee_name'], 'Test Guest');
+    expect(outcome.pass?['attendee_name'], 'Test Guest');
   });
 }

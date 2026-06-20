@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8F4EF),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF1B1B18).withOpacity(0.12)),
+                      border: Border.all(color: const Color(0xFF1B1B18).withValues(alpha: 0.12)),
                     ),
                     child: Image.asset('assets/icon/app-icon.png'),
                   ),

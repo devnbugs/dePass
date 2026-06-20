@@ -103,6 +103,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version-file: pubspec.yaml
           cache: true
 
       - name: Cache Flutter packages
@@ -132,9 +133,9 @@ jobs:
           from pathlib import Path
 
           sdk_levels = {
-              "flutter.compileSdkVersion": "34",
-              "flutter.targetSdkVersion": "34",
-              "flutter.minSdkVersion": "21",
+              "flutter.compileSdkVersion": "36",
+              "flutter.targetSdkVersion": "36",
+              "flutter.minSdkVersion": "24",
           }
 
           def rewrite_key_value_file(path: Path) -> None:
@@ -167,9 +168,9 @@ jobs:
           for path in Path("android").rglob("build.gradle*"):
               text = path.read_text()
               updated = (
-                  text.replace("flutter.compileSdkVersion", "34")
-                  .replace("flutter.targetSdkVersion", "34")
-                  .replace("flutter.minSdkVersion", "21")
+                  text.replace("flutter.compileSdkVersion", "36")
+                  .replace("flutter.targetSdkVersion", "36")
+                  .replace("flutter.minSdkVersion", "24")
               )
               if updated != text:
                   path.write_text(updated)

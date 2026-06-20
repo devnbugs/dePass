@@ -153,9 +153,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: statusColor.withOpacity(0.25)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,9 +229,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withOpacity(0.35),
+                                Colors.black.withValues(alpha: 0.35),
                                 Colors.transparent,
-                                Colors.black.withOpacity(0.35),
+                                Colors.black.withValues(alpha: 0.35),
                               ],
                             ),
                           ),
@@ -242,7 +242,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(32),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   width: 3,
                                 ),
                               ),
@@ -253,7 +253,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(24),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.35),
+                                      color: Colors.white.withValues(alpha: 0.35),
                                       width: 1,
                                     ),
                                   ),
