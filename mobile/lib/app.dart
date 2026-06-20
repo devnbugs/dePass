@@ -16,7 +16,7 @@ class GatePassXApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => SessionProvider(),
       child: MaterialApp(
-        title: 'GatePassX',
+        title: 'GatePassX Version 2026.07.22',
         theme: AppTheme.lightTheme(),
         routes: {
           '/': (context) => const AuthGate(),

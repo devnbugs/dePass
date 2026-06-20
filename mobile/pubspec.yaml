@@ -1,7 +1,7 @@
 name: depass_mobile
-description: GatePassX mobile scanner and organizer app.
+description: GatePassX Version 2026.07.22 - mobile scanner and organizer app.
 publish_to: none
-version: 0.1.0+1
+version: 2026.07.22+20260722
 environment:
   sdk: '>=3.12.0 <4.0.0'
   flutter: '>=3.44.0 <3.45.0'

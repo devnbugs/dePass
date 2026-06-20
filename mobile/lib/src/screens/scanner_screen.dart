@@ -222,7 +222,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                         key: ValueKey(_scannerRestartKey),
                         controller: _controller,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, child) {
+                        errorBuilder: (context, error) {
                           return Container(
                             color: const Color(0xFF1B1B18),
                             padding: const EdgeInsets.all(24),
