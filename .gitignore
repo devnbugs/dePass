@@ -4,6 +4,10 @@
 # Local preflight output
 *.log
 
+/android-sdk/*
+/android-sdk/.temp
+/android-sdk/.*
+
 # Generated app/build artifacts
 /mobile/build/
 /mobile/.dart_tool/
