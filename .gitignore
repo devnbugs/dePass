@@ -1,20 +1,24 @@
 /workspace/
 /.workspace/
 
-# Local preflight output
+# Logs
 *.log
 
-/android-sdk/*
-/android-sdk/.temp
-/android-sdk/.*
+# Flutter
+/flutter/build/
+/flutter/.dart_tool/
+/flutter/.flutter-plugins
+/flutter/.flutter-plugins-dependencies
 
-# Generated app/build artifacts
-/mobile/build/
-/mobile/.dart_tool/
-/mobile/.flutter-plugins
-/mobile/.flutter-plugins-dependencies
+# Laravel
+/laravel/.phpunit.result.cache
+/laravel/database/database.sqlite
+/laravel/vendor/
+/laravel/node_modules/
+/laravel/public/build/
 
-# Local Laravel state
-/backend/.phpunit.result.cache
-/backend/database/database.sqlite
-android/app/gatepassx.keystore
+# Composer
+composer.lock
+
+# Release artifacts
+/release/

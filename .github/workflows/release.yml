@@ -1,0 +1,466 @@
+name: Release - APK & Laravel Shared Hosting
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build target'
+        required: true
+        type: choice
+        options:
+          - all
+          - android
+          - laravel
+      version_code:
+        description: 'Version code (optional, defaults to GitHub run number)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: "8.4"
+  NODE_VERSION: "22"
+  JAVA_VERSION: "17"
+  FLUTTER_VERSION: "3.29.2"
+
+jobs:
+  test-laravel:
+    name: Laravel Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: laravel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, dom, fileinfo, sqlite, pdo_sqlite, openssl
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('laravel/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+
+      - name: Migrate & seed
+        env:
+          XDEBUG_MODE: off
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: php artisan migrate:fresh --seed --force
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Run tests
+        env:
+          XDEBUG_MODE: off
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: php artisan test
+
+  test-flutter:
+    name: Flutter Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Flutter pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter/pubspec.yaml') }}
+          restore-keys: flutter-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run widget tests
+        run: |
+          if [ -d test ]; then
+            flutter test --coverage
+          else
+            echo "No tests directory found"
+          fi
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: [test-laravel, test-flutter]
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_type == 'all' || inputs.build_type == 'android' }}
+    defaults:
+      run:
+        working-directory: flutter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Flutter pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: flutter-${{ runner.os }}-${{ hashFiles('flutter/pubspec.yaml') }}
+          restore-keys: flutter-${{ runner.os }}-
+
+      - name: Generate Android platform
+        run: flutter create --platforms=android --project-name depass_mobile --org com.devnbugs . 2>&1
+
+      - name: Pin Android SDK levels
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          sdk_levels = {
+              "flutter.compileSdkVersion": "36",
+              "flutter.targetSdkVersion": "36",
+              "flutter.minSdkVersion": "28",
+          }
+
+          def rewrite_key_value_file(p):
+              if not p.exists():
+                  return
+              lines = p.read_text().splitlines()
+              rewritten, seen = [], set()
+              for line in lines:
+                  s = line.lstrip()
+                  if "=" in line and not s.startswith("#"):
+                      k, v = line.split("=", 1)
+                      k = k.strip()
+                      if k in sdk_levels:
+                          rewritten.append(f"{k}={sdk_levels[k]}")
+                          seen.add(k)
+                          continue
+                  rewritten.append(line)
+              for k, v in sdk_levels.items():
+                  if k not in seen:
+                      rewritten.append(f"{k}={v}")
+              p.write_text("\n".join(rewritten) + "\n")
+
+          rewrite_key_value_file(Path("android/local.properties"))
+          rewrite_key_value_file(Path("android/gradle.properties"))
+          PY
+
+      - name: Add CAMERA permission
+        run: |
+          manifest="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$manifest" ] && ! grep -q "android.permission.CAMERA" "$manifest"; then
+            sed -i 's|<uses-permission android:name="android.permission.FLASHLIGHT"/>|&\n    <uses-permission android:name="android.permission.CAMERA"/>|' "$manifest"
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        continue-on-error: true
+        run: flutter pub run flutter_launcher_icons -f flutter_launcher_icons.yaml 2>&1 || true
+
+      - name: Build APK (split per ABI)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Prepare release directory
+        run: |
+          mkdir -p release
+          version_code="${{ inputs.version_code }}"
+          [[ -z "$version_code" ]] && version_code="${{ github.run_number }}"
+          ref_name="${{ github.ref_name }}"
+          [[ -z "$ref_name" ]] && ref_name="ci-${version_code}"
+          release_name="gatepassx-mobile-v${ref_name}-${version_code}"
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            abi="$(basename "${apk}" .apk | sed 's/^app-//; s/-release$//')"
+            cp "${apk}" "release/${release_name}-${abi}.apk"
+          done
+
+      - name: Debug failed build
+        if: ${{ failure() }}
+        run: |
+          echo "=== Flutter diagnostics ==="
+          flutter --version || true
+          flutter doctor -v || true
+          echo "=== Android outputs ==="
+          find build/app/outputs -maxdepth 5 -type f 2>/dev/null | sort || true
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatepassx-mobile-apk
+          path: release/*.apk
+          retention-days: 90
+
+  build-laravel:
+    name: Build Laravel Shared Hosting ZIP
+    runs-on: ubuntu-latest
+    needs: test-laravel
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_type == 'all' || inputs.build_type == 'laravel' }}
+    defaults:
+      run:
+        working-directory: laravel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Verify build output
+        run: test -f public/build/manifest.json
+
+      - name: Create shared hosting structure
+        run: |
+          set -euo pipefail
+          version_code="${{ inputs.version_code }}"
+          [[ -z "$version_code" ]] && version_code="${{ github.run_number }}"
+          
+          staging_dir="../release/laravel-shared-hosting"
+          rm -rf "${staging_dir}"
+          mkdir -p "${staging_dir}"
+
+          # Copy all Laravel files to temp location
+          cp -a . ../release/laravel-staged
+
+          # Remove development artifacts
+          rm -rf \
+            "../release/laravel-staged/.env" \
+            "../release/laravel-staged/.phpunit.result.cache" \
+            "../release/laravel-staged/database/database.sqlite" \
+            "../release/laravel-staged/vendor" \
+            "../release/laravel-staged/node_modules" \
+            "../release/laravel-staged/storage/framework/cache/data/"* \
+            "../release/laravel-staged/storage/framework/testing/"* \
+            "../release/laravel-staged/storage/framework/views/"*.php \
+            "../release/laravel-staged/storage/logs/"*.log \
+            "../release/laravel-staged/tests" \
+            "../release/laravel-staged/.gitignore" \
+            "../release/laravel-staged/.gitattributes" \
+            "../release/laravel-staged/.editorconfig" \
+            "../release/laravel-staged/Dockerfile" \
+            "../release/laravel-staged/Dockerfile.dev" \
+            "../release/laravel-staged/phpunit.xml" 2>/dev/null || true
+
+          # Move staged Laravel to staging directory (preserves public/ dir)
+          mv ../release/laravel-staged/* "${staging_dir}/" 2>/dev/null || true
+          
+          # For shared hosting (serv00.com): extract public/ contents to root
+          if [ -d "${staging_dir}/public" ]; then
+            cp -a "${staging_dir}/public/." "${staging_dir}/"
+            rm -rf "${staging_dir}/public"
+          fi
+          
+          # Create root index.php for shared hosting bootstrap (must be AFTER public copy)
+          cat > "${staging_dir}/index.php" <<'PHP'
+          <?php
+
+          use Illuminate\Foundation\Application;
+          use Illuminate\Http\Request;
+
+          define('LARAVEL_START', microtime(true));
+
+          if (file_exists($maintenance = __DIR__.'/storage/framework/maintenance.php')) {
+              require $maintenance;
+          }
+
+          require __DIR__.'/vendor/autoload.php';
+
+          /** @var Application $app */
+          $app = require_once __DIR__.'/bootstrap/app.php';
+
+          $app->handleRequest(Request::capture());
+          PHP
+          
+          # Create .htaccess for shared hosting (must be AFTER public copy to not be overwritten)
+          cat > "${staging_dir}/.htaccess" <<'HTACCESS'
+          <IfModule mod_rewrite.c>
+              <IfModule mod_negotiation.c>
+                  Options -MultiViews -Indexes
+              </IfModule>
+
+              RewriteEngine On
+
+              # Block access to sensitive directories
+              RewriteRule ^(?:app|bootstrap|config|database|resources|routes|storage|tests|vendor)(?:/|$) - [F,L]
+
+              # Block access to sensitive files
+              RewriteRule ^(?:artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|vite\.config\.js|\.env(?:\.|$)) - [F,L]
+
+              # Authorization header passthrough
+              RewriteCond %{HTTP:Authorization} .
+              RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+              # Remove trailing slashes (except for directories)
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteCond %{REQUEST_URI} (.+)/$
+              RewriteRule ^ %1 [L,R=301]
+
+              # Front controller
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteCond %{REQUEST_FILENAME} !-f
+              RewriteRule ^ index.php [L]
+          </IfModule>
+
+          # Deny access to hidden files
+          <FilesMatch "^\.">
+              Require all denied
+          </FilesMatch>
+          HTACCESS
+          
+          # Clean up
+          rm -rf ../release/laravel-staged
+
+      - name: Create deployment ZIP
+        run: |
+          version_code="${{ inputs.version_code }}"
+          [[ -z "$version_code" ]] && version_code="${{ github.run_number }}"
+          ref_name="${{ github.ref_name }}"
+          [[ -z "$ref_name" ]] && ref_name="ci-${version_code}"
+          zip_file="../release/gatepassx-laravel-v${ref_name}-${version_code}.zip"
+          cd release/laravel-shared-hosting
+          zip -qr "${zip_file}" .
+
+      - name: Show ZIP contents
+        run: |
+          echo "=== ZIP contents ==="
+          version_code="${{ inputs.version_code }}"
+          [[ -z "$version_code" ]] && version_code="${{ github.run_number }}"
+          ref_name="${{ github.ref_name }}"
+          [[ -z "$ref_name" ]] && ref_name="ci-${version_code}"
+          unzip -l "../release/gatepassx-laravel-v${ref_name}-${version_code}.zip" | head -50
+
+      - name: Upload Laravel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatepassx-laravel-shared-hosting
+          path: release/*.zip
+          retention-days: 90
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-android, build-laravel]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gatepassx-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: GatePassX ${{ github.ref_name }}
+          body: |
+            ## GatePassX ${{ github.ref_name }}
+
+            ### 📱 Android APK
+            Split per ABI (arm64-v8a, armeabi-v7a, x86_64)
+
+            ### 🏗️ Laravel Shared Hosting
+            - Pre-configured for shared hosting (serv00.com, etc.)
+            - Root `index.php` and `.htaccess` included
+            - Extract in document root and configure `.env`
+
+            ### 🚀 Deployment
+
+            **Android:**
+            ```bash
+            # Install on device
+            adb install gatepassx-mobile-v*VARIANT*.apk
+            ```
+
+            **Laravel (Shared Hosting):**
+            ```bash
+            # Upload and extract
+            unzip gatepassx-laravel-*.zip -d /path/to/document/root
+
+            # Configure environment
+            cp .env.example .env
+            # Edit .env with your database credentials
+
+            # Install dependencies (requires SSH access)
+            composer install --no-dev --optimize-autoloader
+
+            # Generate app key
+            php artisan key:generate
+            ```
+          files: |
+            artifacts/gatepassx-mobile-*.apk
+            artifacts/gatepassx-laravel-*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
