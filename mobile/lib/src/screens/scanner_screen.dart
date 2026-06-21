@@ -279,17 +279,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
           IconButton(
             tooltip: 'Toggle torch',
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               try {
                 await _controller.toggleTorch();
                 if (mounted) {
                   setState(() => _torchEnabled = !_torchEnabled);
                 }
               } catch (_) {
-                if (!mounted) {
-                  return;
-                }
+                if (!mounted) return;
 
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Torch is not available on this camera.')),
                 );
               }

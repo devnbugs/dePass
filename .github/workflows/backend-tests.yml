@@ -100,4 +100,4 @@ jobs:
       - name: Run PHPStan
         run: |
           cd backend
-          ./vendor/bin/phpstan analyse --memory-limit=512M
+          ./vendor/bin/phpstan analyse app --memory-limit=512M

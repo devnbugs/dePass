@@ -71,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: () async {
+              final navigator = Navigator.of(context);
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -89,9 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
 
-              if (confirm == true && context.mounted) {
+              if (confirm == true && mounted) {
                 await session.logout();
-                Navigator.pushReplacementNamed(context, '/');
+                if (mounted) {
+                  navigator.pushReplacementNamed('/');
+                }
               }
             },
           ),
