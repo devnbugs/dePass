@@ -198,14 +198,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                       label: Text(
                                         status,
                                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: Colors.white,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                       backgroundColor: _statusColor(status),
                                       side: BorderSide.none,
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      visualDensity: VisualDensity.compact,
                                     ),
                                   ),
                                 ).animate().fadeIn(duration: 400.ms, delay: (100 * eventPasses.indexOf(pass)).ms);
@@ -250,14 +247,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                       label: Text(
                                         status,
                                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: Colors.white,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                       backgroundColor: _statusColor(status),
                                       side: BorderSide.none,
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      visualDensity: VisualDensity.compact,
                                     ),
                                   ),
                                 ).animate().fadeIn(duration: 300.ms, delay: (80 * eventPasses.indexOf(pass)).ms);

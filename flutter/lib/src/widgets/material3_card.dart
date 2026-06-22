@@ -30,9 +30,9 @@ class Material3Card extends StatelessWidget {
             ? const BorderSide(color: AppColors.outlineVariant, width: 1)
             : BorderSide.none,
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: padding,
           child: child,
@@ -48,7 +48,7 @@ class Material3ListCard extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final VoidCallback? onTap;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? contentPadding;
 
   const Material3ListCard({
     super.key,
@@ -57,43 +57,26 @@ class Material3ListCard extends StatelessWidget {
     this.leading,
     this.trailing,
     this.onTap,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    this.contentPadding,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material3Card(
-      onTap: onTap,
-      padding: padding,
-      child: Row(
-        children: [
-          if (leading != null) ...[
-            leading!,
-            const SizedBox(width: 16),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (trailing != null) ...[
-            const SizedBox(width: 16),
-            trailing!,
-          ],
-        ],
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.outlineVariant, width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        onTap: onTap,
+        leading: leading,
+        title: Text(title),
+        subtitle: subtitle != null ? Text(subtitle!) : null,
+        trailing: trailing,
+        contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

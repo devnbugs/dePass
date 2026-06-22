@@ -87,7 +87,6 @@ class Material3OutlinedButton extends StatelessWidget {
       onPressed: isLoading ? null : onPressed,
       style: OutlinedButton.styleFrom(
         minimumSize: Size(isFullWidth ? double.infinity : 0, height),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Row(
         mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,

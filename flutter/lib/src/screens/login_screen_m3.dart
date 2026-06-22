@@ -54,8 +54,6 @@ class _LoginScreenM3State extends State<LoginScreenM3> {
               ? 'Device approved. You can sign in.'
               : session.deviceMessage ?? 'Device registration is pending admin approval.',
         ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -80,7 +78,6 @@ class _LoginScreenM3State extends State<LoginScreenM3> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('This device must be approved by an admin before login.'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -105,7 +102,6 @@ class _LoginScreenM3State extends State<LoginScreenM3> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Login failed. Please check your credentials.'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
     }

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -227,48 +226,34 @@ class _QrWizardScreenState extends State<QrWizardScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Theme', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        Text('Theme', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: _themes.map((t) {
             final selected = t['id'] == _selectedTheme;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedTheme = t['id'] as String),
-              child: AnimatedContainer(
-                duration: 200.ms,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.primaryContainer : AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.outlineVariant,
-                    width: selected ? 2 : 1,
+            return FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12, height: 12,
+                    decoration: BoxDecoration(
+                      color: Color(int.parse(
+                        (t['fg'] as String).replaceFirst('#', '0xFF'),
+                      )),
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 16, height: 16,
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(
-                          (t['fg'] as String).replaceFirst('#', '0xFF'),
-                        )),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      t['name'] as String,
-                      style: TextStyle(
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
+                  const SizedBox(width: 6),
+                  Text(t['name'] as String),
+                ],
               ),
+              selected: selected,
+              onSelected: (_) => setState(() => _selectedTheme = t['id'] as String),
+              showCheckmark: false,
+              visualDensity: VisualDensity.compact,
             );
           }).toList(),
         ),

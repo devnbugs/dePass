@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () => Navigator.pop(context, false),
                       child: const Text('Cancel'),
                     ),
-                    TextButton(
+                    FilledButton(
                       onPressed: () => Navigator.pop(context, true),
                       child: const Text('Logout'),
                     ),
@@ -298,7 +298,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _shimmerCard(double height) {
-    return Card(
+    return Material3Card(
+      showBorder: false,
       child: SizedBox(
         height: height,
         width: double.infinity,
